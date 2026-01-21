@@ -91,7 +91,7 @@ graph TB
     end
     
     subgraph "Germany - Frankfurt"
-        LB[HAProxy Load Balancerleastconn + sticky sessions]
+        LB[HAProxy Load Balancer leastconn + sticky sessions]
         VLESS_DE[VLESS Backup127.0.0.1:449]
     end
     
@@ -109,13 +109,13 @@ graph TB
     
     subgraph "Russia - SPB"
         MON[Monitoring ServerPrometheus + Grafana]
-        PVE[Proxmox VEAI CCTV Server]
+        PVE[Proxmox AI CCTV Server]
     end
     
     U -->|HTTPS:443| LB
-    LB -->|WireGuard wg3weight:255| OSLO
-    LB -->|WireGuard wg0weight:245| AMS
-    LB -.->|Fallbackweight:1| VLESS_DE
+    LB -->|WireGuard wg3 weight:255| OSLO
+    LB -->|WireGuard wg0 weight:245| AMS
+    LB -.->|Fallback weight:1| VLESS_DE
     
     OSLO -->|Internet| NET[Internet]
     AMS -->|Internet| NET
