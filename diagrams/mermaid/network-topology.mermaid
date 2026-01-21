@@ -1,0 +1,49 @@
+## 2. Network Topology
+
+```mermaid
+graph LR
+    subgraph "Public Internet"
+        INET[Internet]
+    end
+    
+    subgraph "WireGuard VPN Mesh - 10.0.0.0/24"
+        subgraph "Germany LB"
+            GER[10.0.0.1HAProxy]
+        end
+        
+        subgraph "Amsterdam"
+            AMS[10.0.0.2VLESS + NTOP]
+        end
+        
+        subgraph "Oslo"
+            OSLO[10.0.0.5VLESS + NTOP]
+        end
+        
+        subgraph "Germany Secondary"
+            GER2[10.0.3.1wg3 interface]
+        end
+    end
+    
+    subgraph "Private Network - SPB"
+        MON[MonitoringPrometheus]
+        PVE[ProxmoxAI Video]
+    end
+    
+    INET |Public IP| GER
+    INET |Public IP| AMS
+    INET |Public IP| OSLO
+    
+    GER |WireGuard51820/udp| AMS
+    GER2 |WireGuard51823/udp| OSLO
+    
+    GER -.->|VPN| MON
+    AMS -.->|VPN| MON
+    OSLO -.->|VPN| MON
+    PVE -.->|LAN| MON
+    
+    style GER fill:#ff6b6b
+    style GER2 fill:#ff6b6b
+    style AMS fill:#45b7d1
+    style OSLO fill:#4ecdc4
+    style MON fill:#96ceb4
+```

@@ -1,0 +1,62 @@
+## 8. Automation with cosmic-ops
+
+```mermaid
+graph TB
+    subgraph "cosmic-ops Repository"
+        INV[Inventoryinventory.yml]
+        PB[87 Ansible Playbooks]
+        BOT[Telegram BotChatOps]
+        
+        subgraph "Playbooks"
+            PB_HAPROXY[HAProxy Deployment]
+            PB_WG[WireGuard Setup]
+            PB_MON[Monitoring Stack]
+            PB_NTOP[NTOP Configuration]
+            PB_UPDATE[System Updates]
+        end
+    end
+    
+    subgraph "This Repository"
+        CONFIGS[Configuration Files.example templates]
+        DOCS[Documentation]
+    end
+    
+    subgraph "Infrastructure"
+        OSLO[Oslo Server]
+        AMS[Amsterdam Server]
+        GER[Germany Server]
+        SPB[SPB Server]
+    end
+    
+    INV --> PB
+    PB --> PB_HAPROXY
+    PB --> PB_WG
+    PB --> PB_MON
+    PB --> PB_NTOP
+    PB --> PB_UPDATE
+    
+    CONFIGS -.->|Reference| PB
+    
+    PB_HAPROXY -->|Deploy| GER
+    PB_WG -->|Configure| OSLO
+    PB_WG -->|Configure| AMS
+    PB_WG -->|Configure| GER
+    PB_MON -->|Setup| SPB
+    PB_NTOP -->|Install| OSLO
+    PB_NTOP -->|Install| AMS
+    PB_UPDATE -->|Update| OSLO
+    PB_UPDATE -->|Update| AMS
+    PB_UPDATE -->|Update| GER
+    PB_UPDATE -->|Update| SPB
+    
+    BOT -->|Trigger| PB
+    BOT -->|Monitor| OSLO
+    BOT -->|Monitor| AMS
+    BOT -->|Monitor| GER
+    BOT -->|Monitor| SPB
+    
+    style PB fill:#96ceb4
+    style BOT fill:#0088cc
+    style CONFIGS fill:#ffd93d
+```
+

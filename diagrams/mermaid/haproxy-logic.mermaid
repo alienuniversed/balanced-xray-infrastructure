@@ -1,0 +1,45 @@
+## 6. HAProxy Load Balancing Logic
+
+```mermaid
+flowchart TD
+    START[Incoming RequestPort 443] --> HAPROXY{HAProxyFrontend}
+    
+    HAPROXY --> STICKY{Sticky SessionExists?}
+    
+    STICKY -->|Yes| ROUTE_STICKY[Route toSame Backend]
+    STICKY -->|No| ALGO{leastconnAlgorithm}
+    
+    ALGO --> CHECK_OSLO{OsloAvailable?}
+    ALGO --> CHECK_AMS{AmsterdamAvailable?}
+    
+    CHECK_OSLO -->|YesWeight: 255| OSLO[Oslo Endpoint10.0.0.5:449]
+    CHECK_AMS -->|YesWeight: 245| AMS[Amsterdam Endpoint10.0.0.2:449]
+    
+    CHECK_OSLO -->|Down| CHECK_AMS
+    CHECK_AMS -->|Down| BACKUP[Local Backup127.0.0.1:449Weight: 1]
+    
+    OSLO --> HEALTH_OSLO{Health CheckTCP:449}
+    AMS --> HEALTH_AMS{Health CheckTCP:449}
+    BACKUP --> HEALTH_BACKUP{Health CheckTCP:449}
+    
+    HEALTH_OSLO -->|OK| INTERNET[Internet]
+    HEALTH_AMS -->|OK| INTERNET
+    HEALTH_BACKUP -->|OK| INTERNET
+    
+    HEALTH_OSLO -->|FAIL| MARK_DOWN_OSLO[Mark Oslo DOWN]
+    HEALTH_AMS -->|FAIL| MARK_DOWN_AMS[Mark AMS DOWN]
+    
+    MARK_DOWN_OSLO --> REROUTE[Reroute Traffic]
+    MARK_DOWN_AMS --> REROUTE
+    
+    ROUTE_STICKY --> OSLO
+    ROUTE_STICKY --> AMS
+    
+    INTERNET --> RESPONSE[Response to Client]
+    
+    style HAPROXY fill:#ff6b6b
+    style OSLO fill:#4ecdc4
+    style AMS fill:#45b7d1
+    style BACKUP fill:#ffd93d
+    style INTERNET fill:#95e1d3
+```

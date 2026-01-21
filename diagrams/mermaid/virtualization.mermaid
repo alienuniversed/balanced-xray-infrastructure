@@ -1,0 +1,64 @@
+## 5. Virtualization Stack
+
+```mermaid
+graph TB
+    subgraph "Oslo - Bare Metal"
+        OSLO_HW[Hardware]
+        OSLO_KVM[KVM Hypervisor]
+        OSLO_DOCKER[Docker Engine]
+        OSLO_VLESS[VLESS Container]
+        OSLO_NTOP[NTOP Container]
+        
+        OSLO_HW --> OSLO_KVM
+        OSLO_KVM --> OSLO_DOCKER
+        OSLO_DOCKER --> OSLO_VLESS
+        OSLO_DOCKER --> OSLO_NTOP
+    end
+    
+    subgraph "Amsterdam - Bare Metal"
+        AMS_HW[Hardware]
+        AMS_KVM[KVM Hypervisor]
+        AMS_DOCKER[Docker Engine]
+        AMS_VLESS[VLESS Container]
+        AMS_NTOP[NTOP Container]
+        
+        AMS_HW --> AMS_KVM
+        AMS_KVM --> AMS_DOCKER
+        AMS_DOCKER --> AMS_VLESS
+        AMS_DOCKER --> AMS_NTOP
+    end
+    
+    subgraph "Germany - Bare Metal/VM"
+        GER_HW[Hardware]
+        GER_KVM[KVM Hypervisor]
+        GER_DOCKER[Docker Engine]
+        GER_HAPROXY[HAProxy]
+        GER_VLESS[VLESS Backup]
+        
+        GER_HW --> GER_KVM
+        GER_KVM --> GER_DOCKER
+        GER_DOCKER --> GER_HAPROXY
+        GER_DOCKER --> GER_VLESS
+    end
+    
+    subgraph "SPB - Proxmox VE"
+        SPB_HW[Hardware]
+        SPB_PVE[Proxmox VE]
+        SPB_VM1[VM: MonitoringPrometheus + Grafana]
+        SPB_VM2[VM: AI CCTVVideo Processing]
+        SPB_DOCKER1[Docker in VM1]
+        SPB_DOCKER2[Docker in VM2]
+        
+        SPB_HW --> SPB_PVE
+        SPB_PVE --> SPB_VM1
+        SPB_PVE --> SPB_VM2
+        SPB_VM1 --> SPB_DOCKER1
+        SPB_VM2 --> SPB_DOCKER2
+    end
+    
+    style OSLO_DOCKER fill:#4ecdc4
+    style AMS_DOCKER fill:#45b7d1
+    style GER_DOCKER fill:#ff6b6b
+    style SPB_PVE fill:#96ceb4
+```
+

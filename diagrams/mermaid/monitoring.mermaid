@@ -1,0 +1,69 @@
+## 3. Monitoring Infrastructure
+
+```mermaid
+graph TB
+    subgraph "Monitored Endpoints"
+        subgraph "Oslo"
+            OSLO_NE[Node Exporter:8443]
+            OSLO_CA[cAdvisor:8446]
+            OSLO_NT[NTOP Exporter:446]
+        end
+        
+        subgraph "Amsterdam"
+            AMS_NE[Node Exporter:8443]
+            AMS_CA[cAdvisor:8446]
+            AMS_NT[NTOP Exporter:446]
+        end
+        
+        subgraph "Germany LB"
+            GER_NE[Node Exporter:8443]
+            GER_CA[cAdvisor:8446]
+            GER_HA[HAProxy Exporter:448]
+        end
+        
+        subgraph "SPB Proxmox"
+            PVE_EXP[PVE Exporter:9221]
+            VM_NE[VM Node Exporter:9100]
+            VM_CA[VM cAdvisor:8080]
+        end
+    end
+    
+    subgraph "SPB Monitoring Stack"
+        PROM[Prometheus:9090Scrapes every 10s]
+        GRAF[Grafana:3000Dashboards]
+        ALERT[Alertmanager:9093Routing]
+        
+        PROM --> GRAF
+        PROM --> ALERT
+    end
+    
+    subgraph "Notification Channels"
+        TG[Telegram BotAlerts & Reports]
+    end
+    
+    OSLO_NE -.->|Scrape| PROM
+    OSLO_CA -.->|Scrape| PROM
+    OSLO_NT -.->|Scrape| PROM
+    
+    AMS_NE -.->|Scrape| PROM
+    AMS_CA -.->|Scrape| PROM
+    AMS_NT -.->|Scrape| PROM
+    
+    GER_NE -.->|Scrape| PROM
+    GER_CA -.->|Scrape| PROM
+    GER_HA -.->|Scrape| PROM
+    
+    PVE_EXP -.->|Scrape| PROM
+    VM_NE -.->|Scrape| PROM
+    VM_CA -.->|Scrape| PROM
+    
+    ALERT -->|Send| TG
+    
+    SCRIPTS[Custom ScriptsTunnel Stats] -.->|Push| TG
+    
+    style PROM fill:#e74c3c
+    style GRAF fill:#f39c12
+    style ALERT fill:#e67e22
+    style TG fill:#0088cc
+```
+

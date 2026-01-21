@@ -1,0 +1,40 @@
+## 4. Traffic Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant HAProxy as HAProxy LBGermany
+    participant Oslo as Oslo EndpointVLESS + NTOP
+    participant AMS as Amsterdam EndpointVLESS + NTOP
+    participant Backup as Local BackupVLESS
+    participant Internet
+    participant Monitor as MonitoringPrometheus
+    
+    User->>HAProxy: HTTPS Request :443
+    
+    Note over HAProxy: leastconn algorithm+ sticky sessions
+    
+    alt Oslo available (weight 255)
+        HAProxy->>Oslo: Forward via WireGuard wg3
+        Oslo->>Internet: Proxy request
+        Internet->>Oslo: Response
+        Oslo->>HAProxy: Return response
+        Oslo-->>Monitor: Send metrics
+    else Amsterdam available (weight 245)
+        HAProxy->>AMS: Forward via WireGuard wg0
+        AMS->>Internet: Proxy request
+        Internet->>AMS: Response
+        AMS->>HAProxy: Return response
+        AMS-->>Monitor: Send metrics
+    else Both down (weight 1)
+        HAProxy->>Backup: Fallback to local
+        Backup->>Internet: Direct connection
+        Internet->>Backup: Response
+        Backup->>HAProxy: Return response
+    end
+    
+    HAProxy->>User: Final response
+    HAProxy-->>Monitor: HAProxy metrics
+    
+    Note over Monitor: Scrape metricsGenerate alertsSend to Telegram
+```

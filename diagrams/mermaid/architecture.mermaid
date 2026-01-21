@@ -1,0 +1,52 @@
+## 1. Overall Cloud Infrastructure
+
+```mermaid
+graph TB
+    subgraph "Users"
+        U[Users/Clients]
+    end
+    
+    subgraph "Germany - Frankfurt"
+        LB[HAProxy Load Balancerleastconn + sticky sessions]
+        VLESS_DE[VLESS Backup127.0.0.1:449]
+    end
+    
+    subgraph "Norway - Oslo"
+        OSLO[Oslo Endpoint10.0.0.5:449]
+        NTOP_OSLO[NTOP Analyzer]
+        OSLO --> NTOP_OSLO
+    end
+    
+    subgraph "Netherlands - Amsterdam"
+        AMS[Amsterdam Endpoint10.0.0.2:449]
+        NTOP_AMS[NTOP Analyzer]
+        AMS --> NTOP_AMS
+    end
+    
+    subgraph "Russia - SPB"
+        MON[Monitoring ServerPrometheus + Grafana]
+        PVE[Proxmox VEAI CCTV Server]
+    end
+    
+    U -->|HTTPS:443| LB
+    LB -->|WireGuard wg3weight:255| OSLO
+    LB -->|WireGuard wg0weight:245| AMS
+    LB -.->|Fallbackweight:1| VLESS_DE
+    
+    OSLO -->|Internet| NET[Internet]
+    AMS -->|Internet| NET
+    VLESS_DE -.->|Internet| NET
+    
+    OSLO -.->|Metrics| MON
+    AMS -.->|Metrics| MON
+    LB -.->|Metrics| MON
+    PVE -.->|Metrics| MON
+    
+    MON -->|Alerts| TG[Telegram Bot]
+    
+    style LB fill:#ff6b6b
+    style OSLO fill:#4ecdc4
+    style AMS fill:#45b7d1
+    style MON fill:#96ceb4
+    style TG fill:#0088cc
+```
