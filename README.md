@@ -82,7 +82,19 @@ HAProxy Load Balancer (Германия)
     └─→ Local Backup (вес: 1) ──→ Прямое подключение (failover)
 ```
 
+### Схема облачной инфраструктуры
+
 ![Cloud Infrastructure Diagram](https://github.com/alienuniversed/balanced-xray-infrastructure/raw/main/docs/diagrams/Cloud_Infrastructure.png)
+
+### Компоненты мониторинга облачной инфраструктуры
+![Infrastructure_Monitoring](https://github.com/alienuniversed/balanced-xray-infrastructure/raw/main/docs/diagrams/Infrastructure_Monitoring.png)
+
+### Компоненты сети облачной инфраструктуры
+![Network_Schema](https://github.com/alienuniversed/balanced-xray-infrastructure/raw/main/docs/diagrams/Network_Schema.png)
+
+### Компоненты виртуализации/контейнеризации облачной инфраструктуры
+![Virtualization_Schema_drawio](https://github.com/alienuniversed/balanced-xray-infrastructure/raw/main/docs/diagrams/Virtualization_Schema_drawio.png)
+
 
 Подробные схемы архитектуры доступны:
 - 📸 **PNG диаграммы**: [`docs/diagrams/`](docs/diagrams/) 
