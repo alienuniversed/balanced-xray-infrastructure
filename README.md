@@ -81,6 +81,9 @@ HAProxy Load Balancer (Германия)
     ├─→ Amsterdam Endpoint (вес: 245) ──→ WireGuard ──→ Интернет
     └─→ Local Backup (вес: 1) ──→ Прямое подключение (failover)
 ```
+
+![Cloud Infrastructure Diagram](https://github.com/alienuniversed/balanced-xray-infrastructure/raw/main/docs/diagrams/Cloud_Infrastructure.png)
+
 Подробные схемы архитектуры доступны:
 - 📸 **PNG диаграммы**: [`docs/diagrams/`](docs/diagrams/) 
 - 🎨 **Интерактивные Mermaid**: [`diagrams/mermaid`](diagrams/mermaid)
