@@ -83,7 +83,7 @@ HAProxy Load Balancer (Германия)
 ```
 Подробные схемы архитектуры доступны:
 - 📸 **PNG диаграммы**: [`docs/diagrams/`](docs/diagrams/) 
-- 🎨 **Интерактивные Mermaid**: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- 🎨 **Интерактивные Mermaid**: [`diagrams/mermaid`](diagrams/mermaid)
 ---
 
 ## 🛠️ Технологический стек
