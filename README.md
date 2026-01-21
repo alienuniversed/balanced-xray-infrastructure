@@ -135,54 +135,351 @@ graph TB
     style TG fill:#0088cc
 ```
 
-## 2. Network Topology
+## 3. Monitoring Infrastructure
 
 ```mermaid
-graph LR
-    subgraph "Public Internet"
-        INET[Internet]
-    end
-    
-    subgraph "WireGuard VPN Mesh - 10.0.0.0/24"
-        subgraph "Germany LB"
-            GER[10.0.0.1HAProxy]
+graph TB
+    subgraph "Monitored Endpoints"
+        subgraph "Oslo"
+            OSLO_NE[Node Exporter:8443]
+            OSLO_CA[cAdvisor:8446]
+            OSLO_NT[NTOP Exporter:446]
         end
         
         subgraph "Amsterdam"
-            AMS[10.0.0.2VLESS + NTOP]
+            AMS_NE[Node Exporter:8443]
+            AMS_CA[cAdvisor:8446]
+            AMS_NT[NTOP Exporter:446]
         end
         
-        subgraph "Oslo"
-            OSLO[10.0.0.5VLESS + NTOP]
+        subgraph "Germany LB"
+            GER_NE[Node Exporter:8443]
+            GER_CA[cAdvisor:8446]
+            GER_HA[HAProxy Exporter:448]
         end
         
-        subgraph "Germany Secondary"
-            GER2[10.0.3.1wg3 interface]
+        subgraph "SPB Proxmox"
+            PVE_EXP[PVE Exporter:9221]
+            VM_NE[VM Node Exporter:9100]
+            VM_CA[VM cAdvisor:8080]
         end
     end
     
-    subgraph "Private Network - SPB"
-        MON[MonitoringPrometheus]
-        PVE[ProxmoxAI Video]
+    subgraph "SPB Monitoring Stack"
+        PROM[Prometheus:9090Scrapes every 10s]
+        GRAF[Grafana:3000Dashboards]
+        ALERT[Alertmanager:9093Routing]
+        
+        PROM --> GRAF
+        PROM --> ALERT
     end
     
-    INET |Public IP| GER
-    INET |Public IP| AMS
-    INET |Public IP| OSLO
+    subgraph "Notification Channels"
+        TG[Telegram BotAlerts & Reports]
+    end
     
-    GER |WireGuard51820/udp| AMS
-    GER2 |WireGuard51823/udp| OSLO
+    OSLO_NE -.->|Scrape| PROM
+    OSLO_CA -.->|Scrape| PROM
+    OSLO_NT -.->|Scrape| PROM
     
-    GER -.->|VPN| MON
-    AMS -.->|VPN| MON
-    OSLO -.->|VPN| MON
-    PVE -.->|LAN| MON
+    AMS_NE -.->|Scrape| PROM
+    AMS_CA -.->|Scrape| PROM
+    AMS_NT -.->|Scrape| PROM
     
-    style GER fill:#ff6b6b
-    style GER2 fill:#ff6b6b
-    style AMS fill:#45b7d1
+    GER_NE -.->|Scrape| PROM
+    GER_CA -.->|Scrape| PROM
+    GER_HA -.->|Scrape| PROM
+    
+    PVE_EXP -.->|Scrape| PROM
+    VM_NE -.->|Scrape| PROM
+    VM_CA -.->|Scrape| PROM
+    
+    ALERT -->|Send| TG
+    
+    SCRIPTS[Custom ScriptsTunnel Stats] -.->|Push| TG
+    
+    style PROM fill:#e74c3c
+    style GRAF fill:#f39c12
+    style ALERT fill:#e67e22
+    style TG fill:#0088cc
+```
+
+## 4. Traffic Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant HAProxy as HAProxy LBGermany
+    participant Oslo as Oslo EndpointVLESS + NTOP
+    participant AMS as Amsterdam EndpointVLESS + NTOP
+    participant Backup as Local BackupVLESS
+    participant Internet
+    participant Monitor as MonitoringPrometheus
+    
+    User->>HAProxy: HTTPS Request :443
+    
+    Note over HAProxy: leastconn algorithm+ sticky sessions
+    
+    alt Oslo available (weight 255)
+        HAProxy->>Oslo: Forward via WireGuard wg3
+        Oslo->>Internet: Proxy request
+        Internet->>Oslo: Response
+        Oslo->>HAProxy: Return response
+        Oslo-->>Monitor: Send metrics
+    else Amsterdam available (weight 245)
+        HAProxy->>AMS: Forward via WireGuard wg0
+        AMS->>Internet: Proxy request
+        Internet->>AMS: Response
+        AMS->>HAProxy: Return response
+        AMS-->>Monitor: Send metrics
+    else Both down (weight 1)
+        HAProxy->>Backup: Fallback to local
+        Backup->>Internet: Direct connection
+        Internet->>Backup: Response
+        Backup->>HAProxy: Return response
+    end
+    
+    HAProxy->>User: Final response
+    HAProxy-->>Monitor: HAProxy metrics
+    
+    Note over Monitor: Scrape metricsGenerate alertsSend to Telegram
+```
+
+## 5. Virtualization Stack
+
+```mermaid
+graph TB
+    subgraph "Oslo - Bare Metal"
+        OSLO_HW[Hardware]
+        OSLO_KVM[KVM Hypervisor]
+        OSLO_DOCKER[Docker Engine]
+        OSLO_VLESS[VLESS Container]
+        OSLO_NTOP[NTOP Container]
+        
+        OSLO_HW --> OSLO_KVM
+        OSLO_KVM --> OSLO_DOCKER
+        OSLO_DOCKER --> OSLO_VLESS
+        OSLO_DOCKER --> OSLO_NTOP
+    end
+    
+    subgraph "Amsterdam - Bare Metal"
+        AMS_HW[Hardware]
+        AMS_KVM[KVM Hypervisor]
+        AMS_DOCKER[Docker Engine]
+        AMS_VLESS[VLESS Container]
+        AMS_NTOP[NTOP Container]
+        
+        AMS_HW --> AMS_KVM
+        AMS_KVM --> AMS_DOCKER
+        AMS_DOCKER --> AMS_VLESS
+        AMS_DOCKER --> AMS_NTOP
+    end
+    
+    subgraph "Germany - Bare Metal/VM"
+        GER_HW[Hardware]
+        GER_KVM[KVM Hypervisor]
+        GER_DOCKER[Docker Engine]
+        GER_HAPROXY[HAProxy]
+        GER_VLESS[VLESS Backup]
+        
+        GER_HW --> GER_KVM
+        GER_KVM --> GER_DOCKER
+        GER_DOCKER --> GER_HAPROXY
+        GER_DOCKER --> GER_VLESS
+    end
+    
+    subgraph "SPB - Proxmox VE"
+        SPB_HW[Hardware]
+        SPB_PVE[Proxmox VE]
+        SPB_VM1[VM: MonitoringPrometheus + Grafana]
+        SPB_VM2[VM: AI CCTVVideo Processing]
+        SPB_DOCKER1[Docker in VM1]
+        SPB_DOCKER2[Docker in VM2]
+        
+        SPB_HW --> SPB_PVE
+        SPB_PVE --> SPB_VM1
+        SPB_PVE --> SPB_VM2
+        SPB_VM1 --> SPB_DOCKER1
+        SPB_VM2 --> SPB_DOCKER2
+    end
+    
+    style OSLO_DOCKER fill:#4ecdc4
+    style AMS_DOCKER fill:#45b7d1
+    style GER_DOCKER fill:#ff6b6b
+    style SPB_PVE fill:#96ceb4
+```
+
+## 6. HAProxy Load Balancing Logic
+
+```mermaid
+flowchart TD
+    START[Incoming RequestPort 443] --> HAPROXY{HAProxyFrontend}
+    
+    HAPROXY --> STICKY{Sticky SessionExists?}
+    
+    STICKY -->|Yes| ROUTE_STICKY[Route toSame Backend]
+    STICKY -->|No| ALGO{leastconnAlgorithm}
+    
+    ALGO --> CHECK_OSLO{OsloAvailable?}
+    ALGO --> CHECK_AMS{AmsterdamAvailable?}
+    
+    CHECK_OSLO -->|YesWeight: 255| OSLO[Oslo Endpoint10.0.0.5:449]
+    CHECK_AMS -->|YesWeight: 245| AMS[Amsterdam Endpoint10.0.0.2:449]
+    
+    CHECK_OSLO -->|Down| CHECK_AMS
+    CHECK_AMS -->|Down| BACKUP[Local Backup127.0.0.1:449Weight: 1]
+    
+    OSLO --> HEALTH_OSLO{Health CheckTCP:449}
+    AMS --> HEALTH_AMS{Health CheckTCP:449}
+    BACKUP --> HEALTH_BACKUP{Health CheckTCP:449}
+    
+    HEALTH_OSLO -->|OK| INTERNET[Internet]
+    HEALTH_AMS -->|OK| INTERNET
+    HEALTH_BACKUP -->|OK| INTERNET
+    
+    HEALTH_OSLO -->|FAIL| MARK_DOWN_OSLO[Mark Oslo DOWN]
+    HEALTH_AMS -->|FAIL| MARK_DOWN_AMS[Mark AMS DOWN]
+    
+    MARK_DOWN_OSLO --> REROUTE[Reroute Traffic]
+    MARK_DOWN_AMS --> REROUTE
+    
+    ROUTE_STICKY --> OSLO
+    ROUTE_STICKY --> AMS
+    
+    INTERNET --> RESPONSE[Response to Client]
+    
+    style HAPROXY fill:#ff6b6b
     style OSLO fill:#4ecdc4
-    style MON fill:#96ceb4
+    style AMS fill:#45b7d1
+    style BACKUP fill:#ffd93d
+    style INTERNET fill:#95e1d3
+```
+
+## 7. NTOP Traffic Analysis Flow
+
+```mermaid
+graph TB
+    subgraph "Oslo Endpoint"
+        WG_OSLO[WireGuard Interface]
+        NTOP_OSLO[NTOP Analyzer]
+        VLESS_OSLO[VLESS Server]
+        
+        WG_OSLO -->|Mirror Traffic| NTOP_OSLO
+        WG_OSLO --> VLESS_OSLO
+    end
+    
+    subgraph "Amsterdam Endpoint"
+        WG_AMS[WireGuard Interface]
+        NTOP_AMS[NTOP Analyzer]
+        VLESS_AMS[VLESS Server]
+        
+        WG_AMS -->|Mirror Traffic| NTOP_AMS
+        WG_AMS --> VLESS_AMS
+    end
+    
+    subgraph "NTOP Analysis"
+        DPI[Deep Packet Inspection]
+        PROTO[Protocol Analysis]
+        FLOWS[Flow Collection]
+        GEO[Geolocation]
+        STATS[Statistics]
+        
+        NTOP_OSLO --> DPI
+        NTOP_AMS --> DPI
+        
+        DPI --> PROTO
+        DPI --> FLOWS
+        DPI --> GEO
+        DPI --> STATS
+    end
+    
+    subgraph "Metrics Export"
+        EXPORTER[NTOP ExporterPort 446]
+        PROMETHEUS[Prometheus]
+        GRAFANA[Grafana Dashboards]
+        
+        STATS --> EXPORTER
+        EXPORTER -.->|Scrape| PROMETHEUS
+        PROMETHEUS --> GRAFANA
+    end
+    
+    subgraph "Reporting"
+        SCRIPT[Daily Report Script]
+        API[NTOP API]
+        TELEGRAM[Telegram Bot]
+        
+        NTOP_OSLO --> API
+        NTOP_AMS --> API
+        API --> SCRIPT
+        SCRIPT --> TELEGRAM
+    end
+    
+    style NTOP_OSLO fill:#4ecdc4
+    style NTOP_AMS fill:#45b7d1
+    style DPI fill:#ff6b6b
+    style GRAFANA fill:#f39c12
+```
+
+## 8. Automation with cosmic-ops
+
+```mermaid
+graph TB
+    subgraph "cosmic-ops Repository"
+        INV[Inventoryinventory.yml]
+        PB[87 Ansible Playbooks]
+        BOT[Telegram BotChatOps]
+        
+        subgraph "Playbooks"
+            PB_HAPROXY[HAProxy Deployment]
+            PB_WG[WireGuard Setup]
+            PB_MON[Monitoring Stack]
+            PB_NTOP[NTOP Configuration]
+            PB_UPDATE[System Updates]
+        end
+    end
+    
+    subgraph "This Repository"
+        CONFIGS[Configuration Files.example templates]
+        DOCS[Documentation]
+    end
+    
+    subgraph "Infrastructure"
+        OSLO[Oslo Server]
+        AMS[Amsterdam Server]
+        GER[Germany Server]
+        SPB[SPB Server]
+    end
+    
+    INV --> PB
+    PB --> PB_HAPROXY
+    PB --> PB_WG
+    PB --> PB_MON
+    PB --> PB_NTOP
+    PB --> PB_UPDATE
+    
+    CONFIGS -.->|Reference| PB
+    
+    PB_HAPROXY -->|Deploy| GER
+    PB_WG -->|Configure| OSLO
+    PB_WG -->|Configure| AMS
+    PB_WG -->|Configure| GER
+    PB_MON -->|Setup| SPB
+    PB_NTOP -->|Install| OSLO
+    PB_NTOP -->|Install| AMS
+    PB_UPDATE -->|Update| OSLO
+    PB_UPDATE -->|Update| AMS
+    PB_UPDATE -->|Update| GER
+    PB_UPDATE -->|Update| SPB
+    
+    BOT -->|Trigger| PB
+    BOT -->|Monitor| OSLO
+    BOT -->|Monitor| AMS
+    BOT -->|Monitor| GER
+    BOT -->|Monitor| SPB
+    
+    style PB fill:#96ceb4
+    style BOT fill:#0088cc
+    style CONFIGS fill:#ffd93d
 ```
 
 
