@@ -1,0 +1,78 @@
+# Secrets and credentials
+*.pem
+*.key
+*.secret
+*_secret.*
+.env
+.env.local
+.env.production
+id_rsa*
+known_hosts
+authorized_keys
+
+# Real configuration files (only .example files should be committed)
+*.conf
+!*.conf.example
+*.cfg
+!*.cfg.example
+*.yml
+!*.yml.example
+!docker-compose.yml
+!alertmanager.yml
+!alert.rules.yml
+!prometheus.yml.example
+
+# WireGuard
+wg*.conf
+!wg*.conf.example
+
+# SSH keys
+privatekey
+publickey
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+!terraform.tfvars.example
+.terraform/
+
+# Ansible
+inventory.yml
+inventory.ini
+!inventory.example.yml
+!inventory.example.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Backup files
+*.bak
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

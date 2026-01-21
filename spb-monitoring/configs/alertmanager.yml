@@ -1,0 +1,19 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'telegram'
+  group_by: ['alertname', 'instance', 'name']
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+
+receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - bot_token: 'your token here
+        chat_id: your chatid here
+        message: '{{ template "telegram.default" . }}'
+
+templates:
+  - "telegram.tmpl"

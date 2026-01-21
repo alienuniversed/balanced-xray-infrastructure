@@ -1,0 +1,12 @@
+[Interface]
+# Generate with: wg genkey | tee privatekey | wg pubkey > publickey
+PrivateKey = <REDACTED_PRIVATE_KEY>
+Address = 10.0.0.1/24
+ListenPort = 51820
+
+[Peer]
+# Amsterdam Node public key
+PublicKey = <AMSTERDAM_NODE_PUBLIC_KEY>
+AllowedIPs = 10.0.0.2/32
+Endpoint = <AMSTERDAM_PUBLIC_IP>:51820
+PersistentKeepalive = 25

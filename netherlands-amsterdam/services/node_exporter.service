@@ -1,0 +1,12 @@
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=root
+Type=simple
+ExecStart=/root/node_exporter-1.9.1.linux-amd64/node_exporter --web.listen-address=":8443"
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

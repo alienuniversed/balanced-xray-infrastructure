@@ -1,0 +1,15 @@
+[Unit]
+Description=ntopng Prometheus Exporter
+After=network.target ntopng.service
+Wants=ntopng.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ntopng-exporter
+ExecStart=/opt/ntopng-exporter/ntopng-exporter -config /opt/ntopng-exporter/config/ntopng-exporter.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

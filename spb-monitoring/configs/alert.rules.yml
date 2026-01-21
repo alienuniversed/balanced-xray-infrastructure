@@ -1,0 +1,136 @@
+groups:
+- name: node_down_alerts
+  rules:
+  - alert: NodeDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "❌ Сервер {{ $labels.instance }} недоступен!"
+      description: "Prometheus не видит сервер {{ $labels.instance }} ({{ $labels.job }}) более 1 минуты."
+
+- name: network_traffic_alerts
+  rules:
+  - alert: HighNetworkUsage_Local
+    expr: |
+      (
+        rate(node_network_receive_bytes_total{job="local-node", device!~"lo|docker.*"}[1m]) +
+        rate(node_network_transmit_bytes_total{job="local-node", device!~"lo|docker.*"}[1m])
+      ) * 8 / 1000000 > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Высокий сетевой трафик на local-node!"
+      description: "На сервере {{ $labels.instance }} (local-node) средняя скорость передачи и приёма превысила 80 Мбит/с за последние 1 минуту."
+
+  - alert: HighNetworkUsage_LB
+    expr: |
+      (
+        rate(node_network_receive_bytes_total{job="germany-node", device!~"lo|docker.*"}[1m]) +
+        rate(node_network_transmit_bytes_total{job="germany-node", device!~"lo|docker.*"}[1m])
+      ) * 8 / 1000000 > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Высокий сетевой трафик на балансировщике LB-FRA-M247-TELEHOUSE!"
+      description: "На сервере {{ $labels.instance }} (germany-node) средняя скорость передачи и приёма превысила 80 Мбит/с за последние 1 минуту."
+
+  - alert: HighNetworkUsage_Helsinki
+    expr: |
+      (
+        rate(node_network_receive_bytes_total{job="helsinki-node", device!~"lo|docker.*"}[1m]) +
+        rate(node_network_transmit_bytes_total{job="helsinki-node", device!~"lo|docker.*"}[1m])
+      ) * 8 / 1000000 > 800
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Высокий сетевой трафик на helsinki-node!"
+      description: "На сервере {{ $labels.instance }} (helsinki-node) средняя скорость передачи и приёма превысила 800 Мбит/с за последние 1 минуту."
+
+  - alert: HighNetworkUsage_Germany
+    expr: |
+      (
+        rate(node_network_receive_bytes_total{job="germany-node-sbg", device!~"lo|docker.*"}[1m]) +
+        rate(node_network_transmit_bytes_total{job="germany-node-sbg", device!~"lo|docker.*"}[1m])
+      ) * 8 / 1000000 > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Высокий сетевой трафик на SB-SBG-G2 STRASBURG!"
+      description: "На сервере {{ $labels.instance }} (germany-node) средняя скорость передачи и приёма превысила 80 Мбит/с за последние 1 минуту."
+
+- name: resource_usage_alerts
+  rules:
+  - alert: HighCPUUsage
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 90
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Высокая загрузка CPU на {{ $labels.instance }}!"
+      description: "CPU загружен более 90% на сервере {{ $labels.instance }}."
+
+  - alert: HighMemoryUsage
+    expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Высокое потребление оперативной памяти на {{ $labels.instance }}!"
+      description: "Использование памяти на сервере {{ $labels.instance }} превысило 90%."
+
+  - alert: LowDiskSpace
+    expr: (node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} - node_filesystem_free_bytes{fstype!~"tmpfs|overlay"}) / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} * 100 > 90
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "⚠️ Мало свободного места на диске на {{ $labels.instance }}!"
+      description: "На сервере {{ $labels.instance }} диск заполнен более чем на 90%."
+
+- name: container_alerts
+  rules:
+  - alert: ContainerDown
+    expr: (time() - container_last_seen{name!~"cadvisor|POD|system.slice.*|user.slice.*"}) > 180
+    for: 3m
+    labels:
+      severity: critical
+    annotations:
+      summary: "❌ Контейнер {{ $labels.image }} на {{ $labels.instance }} недоступен!"
+      description: "Контейнер {{ $labels.image }} на сервере {{ $labels.instance }} (job {{ $labels.job }}) не работает более 1 минуты."
+
+- name: haproxy_alerts
+  rules:
+    - alert: HaproxyHighErrorRate
+      expr: |
+        sum(rate(haproxy_frontend_http_responses_total{code=~"5.."}[5m])) by (proxy) /
+        sum(rate(haproxy_frontend_http_responses_total[5m])) by (proxy) * 100 > 5
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "⚠️ Высокий процент ошибок 5xx в HAProxy фронтенде {{ $labels.proxy }}!"
+        description: "На фронтенде {{ $labels.proxy }} (instance {{ $labels.instance }}) доля 5xx-ответов превысила 5% за 5 минут."
+
+    - alert: HaproxyHighQueue
+      expr: haproxy_backend_queue > 10
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "⚠️ Длинная очередь в HAProxy backend {{ $labels.backend }}!"
+        description: "В backend {{ $labels.backend }} (instance {{ $labels.instance }}) очередь соединений > 10."
+
+    - alert: HaproxyProcessDown
+      expr: haproxy_up == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "❌ HAProxy процесс на {{ $labels.instance }} не работает!"
+        description: "HAProxy Exporter сообщает, что процесс HAProxy не в состоянии UP более 1 минуты."

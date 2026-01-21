@@ -1,0 +1,12 @@
+[Interface]
+# Generate with: wg genkey | tee privatekey | wg pubkey > publickey
+PrivateKey = <REDACTED_PRIVATE_KEY>
+Address = 10.0.0.2/24
+ListenPort = 51820
+
+[Peer]
+# Germany Load Balancer public key
+PublicKey = <GERMANY_LB_PUBLIC_KEY>
+AllowedIPs = 10.0.0.1/32
+Endpoint = <GERMANY_LB_PUBLIC_IP>:51820
+PersistentKeepalive = 25

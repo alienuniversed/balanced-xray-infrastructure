@@ -1,0 +1,12 @@
+[Unit]
+Description=Start/stop ntop service
+After=network.target syslog.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /usr/share/ntop/scripts/ntop-service.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

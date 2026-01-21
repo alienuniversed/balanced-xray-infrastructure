@@ -1,0 +1,75 @@
+global:
+  scrape_interval: 10s
+  scrape_timeout: 10s
+
+scrape_configs:
+  - job_name: 'local-node'
+    static_configs:
+      - targets: ['node_exporter:9100']
+
+  - job_name: 'germany-node'
+    static_configs:
+      - targets: ['hidden:8443']
+
+  - job_name: 'pve_exporter'
+    static_configs:
+      - targets: ['hidden:9221']
+
+  - job_name: 'pve-spb-cctv-aivm'
+    static_configs:
+      - targets: ['hidden:9100']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['hidden:8080']
+
+  - job_name: 'cadvisor-telehouse'
+    static_configs:
+      - targets: ['hidden:8446']
+
+  - job_name: 'cadvisor-ai-videoserver'
+    static_configs:
+      - targets: ['hidden:8080']
+
+  - job_name: 'germany-node-sbg'
+    static_configs:
+      - targets: ['hidden:8443']
+
+  - job_name: 'haproxy'
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - hidden:448
+
+  - job_name: 'ntopng-amsterdam'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['hidden:446']
+        labels:
+          server: 'amsterdam'
+          location: 'netherlands'
+          service: 'vless-endpoint'
+
+
+  - job_name: 'ntopng-oslo'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['hidden:446']
+        labels:
+          server: 'oslo'
+          location: 'norway'
+          service: 'vless-endpoint'
+
+  - job_name: 'nw-oslo-node'
+    static_configs:
+      - targets: ['hidden:8443']
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - 'alertmanager:9093'
+
+rule_files:
+  - "alert.rules.yml"
+  - "traffic.rules.yml"
